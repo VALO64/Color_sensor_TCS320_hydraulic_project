@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include <TCS320.h>
 #include <BluetoothSerial.h>
+
+// Oscar Alberto Valles Limas 
+
 // Definir los pines para el sensor
 #define S0 18
 #define S1 19
@@ -24,12 +27,15 @@ int red, green, blue;
 #define MODE_CALIBRATION  1
 #define MODE_NORMAL       2
 #define GREEN_DETECTION   3
+#define BLUE_DETECTION    4
+#define RED_DETECTION     5
 int mode = MODE_NORMAL; // Comienza en modo normal
 
-//Objeto Bluetooth
+// Objeto Bluetooth
 BluetoothSerial SerialBT;
-//Declaraciones de funciones 
-void colordiferences ();
+
+// Declaraciones de funciones
+void colordiferences();
 
 void setup() {
   // Inicializar la comunicación serial
@@ -50,36 +56,62 @@ void loop() {
   // Verificar si hay datos disponibles en el puerto serial
   if (Serial.available() > 0) {
     char input = Serial.read();
-    
     // Cambiar de modo según la entrada del usuario
-    if (input == 'c') {
-      mode = MODE_CALIBRATION;
-      Serial.println("Modo calibración seleccionado.");
-    } else if (input == 'u') {
-      mode = MODE_NORMAL;
-      Serial.println("Modo normal seleccionado.");
-    } else if (input == 'g') {
-      mode = GREEN_DETECTION;
-    }
-  if (SerialBT.available() > 0){
-    String mode = SerialBT.readStringUntil('\n'); // Leer el comando hasta el salto de línea
-    // Cambiar de modo según la entrada del usuario
-    if (input == 'c') {
-      mode = MODE_CALIBRATION;
-      Serial.println("Modo calibración seleccionado.");
-    } else if (input == 'u') {
-      mode = MODE_NORMAL;
-      Serial.println("Modo normal seleccionado.");
-    } else if (input == 'g') {
-      mode = GREEN_DETECTION;
+    switch (input) {
+      case 'c':
+        mode = MODE_CALIBRATION;
+        Serial.println("Modo calibración seleccionado.");
+        break;
+      case 'u':
+        mode = MODE_NORMAL;
+        Serial.println("Modo normal seleccionado.");
+        break;
+      case 'v':
+        mode = GREEN_DETECTION;
+        break;
+      case 'a':
+        mode = BLUE_DETECTION;
+        break;
+      case 'r':
+        mode = RED_DETECTION;
+        break;
     }
   }
+
+  // Verificar si hay datos disponibles en el Bluetooth
+if (SerialBT.available() > 0) {
+    String btInput = SerialBT.readStringUntil('\n'); // Leer el comando hasta el salto de línea
+    if (btInput == "c") {
+        mode = MODE_CALIBRATION;
+        Serial.println("Modo calibración seleccionado.");
+        SerialBT.println("Modo calibración seleccionado.");
+    } else if (btInput == "u") {
+        mode = MODE_NORMAL;
+        Serial.println("Modo normal seleccionado.");
+        SerialBT.println("Modo normal seleccionado.");
+    } else if (btInput == "g") {
+        mode = GREEN_DETECTION;
+        Serial.println("Modo detección verde seleccionado.");
+        SerialBT.println("Modo detección verde seleccionado.");
+    } else if (btInput == "b") {
+        mode = BLUE_DETECTION;
+        Serial.println("Modo detección azul seleccionado.");
+        SerialBT.println("Modo detección azul seleccionado.");
+    } else if (btInput == "r") {
+        mode = RED_DETECTION;
+        Serial.println("Modo detección rojo seleccionado.");
+        SerialBT.println("Modo detección rojo seleccionado.");
+    } else {
+        Serial.println("Comando desconocido.");
+        SerialBT.println("Comando desconocido.");
+    }
 }
+
+
   // Modo calibración
   if (mode == MODE_CALIBRATION) {
     // Leer los colores
     colorSensor.readAll(red, green, blue);
-
     // Imprimir los valores de calibración
     Serial.print("R = ");
     Serial.print(red);
@@ -87,13 +119,11 @@ void loop() {
     Serial.print(green);
     Serial.print(" B = ");
     Serial.println(blue);
-
     delay(500);  // Espera de medio segundo para nuevas lecturas
   }
 
   // Modo normal (uso del sensor)
   if (mode == MODE_NORMAL) {
-    // Leer los colores
     colordiferences();
     // Imprimir los valores de los colores
     Serial.print("R = ");
@@ -111,29 +141,49 @@ void loop() {
     } else if (blueColor > redColor && blueColor > greenColor) {
       Serial.println(" - BLUE detected!");
     }
-
     delay(500);  // Espera de medio segundo para la siguiente lectura
   }
-    if(mode == GREEN_DETECTION){
 
+  // Modo detección de color específico
+  if (mode == GREEN_DETECTION) {
     colordiferences();
-
-      if(greenColor > redColor && greenColor > blueColor){
-        digitalWrite(PISTON, HIGH);
-        Serial.println(" - GREEN detected!");
-      }else{
-        digitalWrite(PISTON, LOW);
-        Serial.println(" - not GREEN detected!");
-      }
-    delay(500);
+    if (greenColor > redColor && greenColor > blueColor) {
+      digitalWrite(PISTON, HIGH);
+      Serial.println(" - GREEN detected!");
+    } else {
+      digitalWrite(PISTON, LOW);
+      Serial.println(" - not GREEN detected!");
     }
+    delay(500);
+  }
+  if (mode == BLUE_DETECTION) {
+    colordiferences();
+    if (blueColor > redColor && blueColor > greenColor) {
+      digitalWrite(PISTON, HIGH);
+      Serial.println(" - BLUE detected!");
+    } else {
+      digitalWrite(PISTON, LOW);
+      Serial.println(" - not BLUE detected!");
+    }
+    delay(500);
+  }
+  if (mode == RED_DETECTION) {
+    colordiferences();
+    if (redColor > greenColor && redColor > blueColor) {
+      digitalWrite(PISTON, HIGH);
+      Serial.println(" - RED detected!");
+    } else {
+      digitalWrite(PISTON, LOW);
+      Serial.println(" - not RED detected!");
+    }
+    delay(500);
+  }
 }
-void colordiferences (){
-    colorSensor.readAll(redColor, greenColor, blueColor);
 
-    // Remapear los valores de frecuencia a valores RGB de 0 a 255
-    redColor = map(redColor, 91, 246, 221, 0);
-    greenColor = map(greenColor, 158, 194, 198, 0); //17, 84, 108, 0
-    blueColor = map(blueColor, 167, 170, 139, 0); //121, 127, 146, 0
-
+void colordiferences() {
+  colorSensor.readAll(redColor, greenColor, blueColor);
+  // Remapear los valores de frecuencia a valores RGB de 0 a 255
+  redColor = map(redColor, 134, 148, 169, 0);
+  greenColor = map(greenColor, 185, 230, 284, 0);
+  blueColor = map(blueColor, 210, 285, 333, 0);
 }

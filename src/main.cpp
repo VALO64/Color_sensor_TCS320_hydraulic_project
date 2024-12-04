@@ -150,6 +150,7 @@ if (SerialBT.available() > 0) {
     if (greenColor > redColor && greenColor > blueColor) {
       digitalWrite(PISTON, HIGH);
       Serial.println(" - GREEN detected!");
+      delay(2000);
     } else {
       digitalWrite(PISTON, LOW);
       Serial.println(" - not GREEN detected!");
@@ -161,6 +162,7 @@ if (SerialBT.available() > 0) {
     if (blueColor > redColor && blueColor > greenColor) {
       digitalWrite(PISTON, HIGH);
       Serial.println(" - BLUE detected!");
+      delay(2000);
     } else {
       digitalWrite(PISTON, LOW);
       Serial.println(" - not BLUE detected!");
